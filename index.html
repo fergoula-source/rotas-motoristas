@@ -3,64 +3,70 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+  <meta name="theme-color" content="#f47b20">
   <title>Rotas Internas - Motoristas</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <header>
     <div>
-      <h1>Rotas Internas</h1>
-      <p>Orientação de entrada para motoristas externos</p>
+      <h1>ROTAS INTERNAS</h1>
+      <p>Orientação para motoristas externos</p>
     </div>
   </header>
 
-  <section class="controls">
-    <label for="destino">Para onde você precisa ir?</label>
-    <select id="destino">
-      <option value="">Selecione o destino...</option>
-    </select>
+  <main>
+    <section class="controls">
+      <label for="destino">Para onde você precisa ir?</label>
+      <select id="destino">
+        <option value="">Selecione o destino...</option>
+      </select>
 
-    <button id="btnRota" class="primary">VER ROTA</button>
+      <button id="btnRota" class="primary">INICIAR ROTA</button>
 
-    <div class="info-grid">
-      <div><b>Localização</b><span id="gpsStatus">aguardando permissão...</span></div>
-      <div><b>Precisão GPS</b><span id="gpsAccuracy">--</span></div>
-      <div><b>Destino</b><span id="destinoStatus">nenhum</span></div>
-      <div><b>Distância da rota</b><span id="distanciaStatus">--</span></div>
-    </div>
-
-    <div class="buttons-row">
-      <button id="btnPortaria">TESTAR DA PORTARIA</button>
-      <button id="btnMinhaPosicao">MINHA POSIÇÃO</button>
-      <button id="btnMenos">−</button>
-      <button id="btnMais">+</button>
-    </div>
-  </section>
-
-  <section class="map-shell">
-    <div id="viewport">
-      <div id="canvas">
-        <img id="mapImage" src="mapa_patio.png" alt="Mapa interno">
-        <svg id="overlay" viewBox="0 0 1414 2000" preserveAspectRatio="none">
-          <polyline id="routeLine" points="" />
-          <circle id="gpsAccuracyCircle" cx="-100" cy="-100" r="0" />
-          <circle id="gpsDot" cx="-100" cy="-100" r="12" />
-          <circle id="startDot" cx="207.51" cy="1758.58" r="9" />
-          <circle id="destDot" cx="-100" cy="-100" r="13" />
-        </svg>
+      <div class="cards">
+        <div><b>Origem</b><span id="origemStatus">obtendo sua localização...</span></div>
+        <div><b>Precisão do GPS</b><span id="gpsAccuracy">--</span></div>
+        <div><b>Destino</b><span id="destinoStatus">nenhum</span></div>
+        <div><b>Distância aprox.</b><span id="distanciaStatus">--</span></div>
       </div>
-    </div>
-  </section>
 
-  <section class="warning">
-    <b>Atenção:</b> siga sempre a sinalização física, o limite de velocidade e as orientações da portaria.
-    Este protótipo calcula apenas a rota de entrada.
-  </section>
+      <div id="msg" class="msg">Permita o acesso à localização do celular.</div>
 
-  <section class="prototype">
-    <b>Protótipo:</b> o traçado desta versão foi reconstruído manualmente a partir do mapa enviado.
-    Antes do uso oficial, o caminho deverá ser conferido no pátio e depois substituído pela geometria exata da layer <b>Caminho</b> do CAD.
-  </section>
+      <div class="actions">
+        <button id="btnMinhaPosicao">MINHA POSIÇÃO</button>
+        <button id="btnPortaria">TESTAR DA PORTARIA</button>
+        <button id="btnMenos">−</button>
+        <button id="btnMais">+</button>
+      </div>
+    </section>
+
+    <section class="map-shell">
+      <div id="viewport">
+        <div id="canvas">
+          <img id="mapImage" src="mapa_patio.png" alt="Mapa interno">
+          <svg id="overlay" viewBox="0 0 1414 2000" preserveAspectRatio="none">
+            <polyline id="routeHalo" points="" />
+            <polyline id="routeLine" points="" />
+            <circle id="snapDot" cx="-100" cy="-100" r="7" />
+            <circle id="gpsAccuracyCircle" cx="-100" cy="-100" r="0" />
+            <circle id="gpsDot" cx="-100" cy="-100" r="13" />
+            <circle id="destDot" cx="-100" cy="-100" r="14" />
+          </svg>
+        </div>
+      </div>
+    </section>
+
+    <section class="warning">
+      <b>Atenção:</b> siga a sinalização física, o limite de velocidade e as orientações dos colaboradores.
+      O sistema orienta a entrada até o destino selecionado; a saída não é calculada.
+    </section>
+
+    <section class="prototype">
+      <b>Versão de teste.</b> O traçado foi reconstruído a partir do caminho desenhado no mapa:
+      preto = fluxo de ida, vermelho = mão dupla. A rota azul de saída não é usada na navegação de entrada.
+    </section>
+  </main>
 
   <script src="dados.js"></script>
   <script src="app.js"></script>
