@@ -15,6 +15,16 @@ const msg = byId("msg");
 const viewport = byId("viewport");
 const canvas = byId("canvas");
 
+const locationModal = byId("locationModal");
+const locationText = byId("locationText");
+const locationHelp = byId("locationHelp");
+const btnEnableLocation = byId("btnEnableLocation");
+const btnUseGate = byId("btnUseGate");
+
+let locationWatchId = null;
+let locationFallbackAccepted = false;
+
+
 let scale = 0.45, offsetX = 0, offsetY = 0, dragStart = null;
 let gps = null;
 let gpsPixel = null;
@@ -314,7 +324,113 @@ viewport.addEventListener("pointermove",e=>{
 viewport.addEventListener("pointerup",()=>dragStart=null);
 viewport.addEventListener("pointercancel",()=>dragStart=null);
 
+
+function showLocationModal(type="unavailable"){
+  if(locationFallbackAccepted) return;
+
+  locationModal.classList.remove("hidden");
+  locationHelp.classList.add("hidden");
+  locationHelp.innerHTML = "";
+
+  if(type==="denied"){
+    locationText.textContent =
+      "A localização está bloqueada para este site. Ative a permissão de localização e tente novamente.";
+
+    locationHelp.classList.remove("hidden");
+    locationHelp.innerHTML =
+      "<b>Android/Chrome:</b> toque no ícone ao lado do endereço do site → Permissões → Localização → Permitir.<br><br>" +
+      "<b>iPhone:</b> Ajustes → Privacidade e Segurança → Serviços de Localização e confirme que o navegador pode usar sua localização.";
+  }else{
+    locationText.textContent =
+      "Ative o GPS/Localização do celular para iniciar a rota exatamente do ponto onde você está.";
+  }
+}
+
+function hideLocationModal(){
+  locationModal.classList.add("hidden");
+}
+
+function startLocationWatch(){
+  if(!("geolocation" in navigator)){
+    gpsError({code:2});
+    return;
+  }
+
+  if(locationWatchId !== null){
+    navigator.geolocation.clearWatch(locationWatchId);
+    locationWatchId = null;
+  }
+
+  locationWatchId = navigator.geolocation.watchPosition(
+    updateGps,
+    gpsError,
+    {
+      enableHighAccuracy:true,
+      maximumAge:1500,
+      timeout:15000
+    }
+  );
+}
+
+async function retryLocation(){
+  locationFallbackAccepted = false;
+
+  if(!("geolocation" in navigator)){
+    showLocationModal("unavailable");
+    return;
+  }
+
+  // Se o navegador expuser o estado da permissão, usamos para dar
+  // uma orientação melhor quando ela já foi bloqueada.
+  try{
+    if(navigator.permissions && navigator.permissions.query){
+      const result = await navigator.permissions.query({name:"geolocation"});
+
+      if(result.state==="denied"){
+        showLocationModal("denied");
+        return;
+      }
+    }
+  }catch(e){
+    // Nem todos os navegadores suportam consulta de permissão.
+  }
+
+  locationText.textContent = "Solicitando sua localização...";
+  locationHelp.classList.add("hidden");
+
+  navigator.geolocation.getCurrentPosition(
+    pos=>{
+      updateGps(pos);
+      hideLocationModal();
+      startLocationWatch();
+    },
+    err=>{
+      if(err.code===1) showLocationModal("denied");
+      else showLocationModal("unavailable");
+    },
+    {
+      enableHighAccuracy:true,
+      maximumAge:0,
+      timeout:15000
+    }
+  );
+}
+
+btnEnableLocation.addEventListener("click", retryLocation);
+
+btnUseGate.addEventListener("click", ()=>{
+  locationFallbackAccepted = true;
+  gpsPixel = null;
+  origemStatus.textContent = "Portaria";
+  gpsAccuracy.textContent = "--";
+  msg.textContent = "Localização não utilizada. A origem será a Portaria.";
+  hideLocationModal();
+});
+
 function updateGps(pos){
+  hideLocationModal();
+  locationFallbackAccepted = false;
+
   gps={lat:pos.coords.latitude,lon:pos.coords.longitude,accuracy:pos.coords.accuracy};
   gpsPixel=geoToPixel(gps.lat,gps.lon);
   gpsDot.setAttribute("cx",gpsPixel.x);
@@ -339,8 +455,10 @@ function gpsError(err){
 
   if(err.code===1){
     msg.textContent="Localização não autorizada. A origem será a Portaria.";
+    showLocationModal("denied");
   }else{
     msg.textContent="Localização indisponível. A origem será a Portaria.";
+    showLocationModal("unavailable");
   }
 }
 

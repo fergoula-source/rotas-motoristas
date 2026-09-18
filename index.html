@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
   <meta name="theme-color" content="#f47b20">
   <title>Rotas Internas - Motoristas</title>
-  <link rel="stylesheet" href="style.css?v=5">
+  <link rel="stylesheet" href="style.css?v=6">
 </head>
 <body>
   <header>
@@ -42,7 +42,7 @@
     <section class="map-shell">
       <div id="viewport">
         <div id="canvas">
-          <img id="mapImage" src="mapa_patio.png?v=5" alt="Mapa interno">
+          <img id="mapImage" src="mapa_patio.png?v=6" alt="Mapa interno">
           <svg id="overlay" viewBox="0 0 1414 2000" preserveAspectRatio="none">
             <polyline id="routeHalo" points="" />
             <polyline id="routeLine" points="" />
@@ -60,7 +60,28 @@
     </section>
   </main>
 
-  <script src="dados.js?v=5"></script>
-  <script src="app.js?v=5"></script>
+
+  <div id="locationModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="locationTitle">
+    <div class="modal-card">
+      <div class="location-icon">📍</div>
+      <h2 id="locationTitle">Ative sua localização</h2>
+      <p id="locationText">
+        Para iniciar a rota do ponto onde você está, permita o acesso à localização.
+      </p>
+
+      <div id="locationHelp" class="location-help hidden"></div>
+
+      <button id="btnEnableLocation" class="modal-primary">
+        ATIVAR LOCALIZAÇÃO
+      </button>
+
+      <button id="btnUseGate" class="modal-secondary">
+        CONTINUAR PELA PORTARIA
+      </button>
+    </div>
+  </div>
+
+  <script src="dados.js?v=6"></script>
+  <script src="app.js?v=6"></script>
 </body>
 </html>

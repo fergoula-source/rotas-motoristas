@@ -1,23 +1,25 @@
-ROTAS INTERNAS - V5 (BASE V3)
+ROTAS INTERNAS - V6 (BASE V5/V3)
 
-Esta versão foi refeita diretamente em cima da V3.
+NOVIDADE
+--------
+Quando a localização estiver indisponível ou bloqueada, abre um popup:
 
-Mudanças:
-- GPS disponível: usa automaticamente a localização atual.
-- GPS bloqueado/indisponível: usa automaticamente a Portaria.
-- Removidos os botões Minha Posição e Testar da Portaria.
-- Zoom + e - mantidos com a mesma lógica da V3.
-- Visualização inicial do mapa mantida como na V3.
-- O arraste não deixa mais o mapa sair completamente da tela.
-- Fundo externo do mapa em cinza em vez de preto.
-- Ao tocar em INICIAR ROTA, solicita Screen Wake Lock imediatamente.
-- Aviso inferior simplificado.
-- Segundo aviso inferior removido.
-- ?v=5 adicionado aos arquivos para evitar cache antigo no celular/GitHub Pages.
+1. ATIVAR LOCALIZAÇÃO
+   - tenta solicitar a permissão novamente;
+   - se o navegador permitir, usa imediatamente a localização real;
+   - se a permissão estiver bloqueada, mostra instruções de como liberar.
 
-ATUALIZAÇÃO NO GITHUB:
-Substitua os arquivos da V3 por todos os arquivos desta pasta e faça o commit.
-Depois abra o site e atualize a página.
+2. CONTINUAR PELA PORTARIA
+   - fecha o popup;
+   - mantém a Portaria como origem.
 
-IMPORTANTE:
-O Screen Wake Lock depende do navegador, HTTPS e configurações de economia de energia do aparelho.
+LIMITAÇÃO DOS NAVEGADORES
+-------------------------
+Sites comuns não conseguem abrir diretamente a tela de configurações de
+localização do Android/iPhone de maneira universal. Isso é uma restrição
+de segurança do sistema operacional/navegador.
+
+ATUALIZAÇÃO
+-----------
+Substitua todos os arquivos do repositório pelos desta pasta.
+A versão usa ?v=6 para evitar cache antigo no celular.
