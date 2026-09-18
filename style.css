@@ -16,9 +16,9 @@ button{border:0;font-weight:700;cursor:pointer}
 .cards b,.cards span{display:block}
 .cards span{margin-top:3px}
 .msg{font-size:13px;margin-top:8px;padding:9px;border-left:4px solid var(--orange);background:#fff4eb}
-.actions{display:grid;grid-template-columns:2fr 2fr .55fr .55fr;gap:6px;margin-top:9px}
-.actions button{font-size:11px;background:#dfe3e6;color:#111;padding:0 5px}
-.map-shell{background:#222}
+.actions{display:flex;justify-content:flex-end;gap:6px;margin-top:9px}
+.actions button{width:52px;font-size:22px;background:#dfe3e6;color:#111;padding:0 5px}
+.map-shell{background:#e5e7e9}
 #viewport{height:61vh;min-height:430px;overflow:hidden;position:relative;touch-action:none}
 #canvas{position:absolute;left:0;top:0;width:1414px;height:2000px;transform-origin:0 0}
 #mapImage{position:absolute;left:0;top:0;width:1414px;height:2000px;user-select:none;-webkit-user-drag:none}
@@ -29,7 +29,6 @@ button{border:0;font-weight:700;cursor:pointer}
 #gpsAccuracyCircle{fill:#1112;stroke:#1118;stroke-width:2}
 #snapDot{fill:#fff;stroke:var(--orange);stroke-width:4}
 #destDot{fill:var(--orange);stroke:#fff;stroke-width:5}
-.warning,.prototype{margin:10px;padding:11px;border-radius:7px;line-height:1.35;font-size:13px}
+.warning{margin:10px;padding:11px;border-radius:7px;line-height:1.35;font-size:13px}
 .warning{background:#fff0c9}
-.prototype{background:#e2e5e8}
 @media(min-width:800px){#viewport{height:680px}}

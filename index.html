@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
   <meta name="theme-color" content="#f47b20">
   <title>Rotas Internas - Motoristas</title>
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css?v=5">
 </head>
 <body>
   <header>
@@ -31,11 +31,9 @@
         <div><b>Distância aprox.</b><span id="distanciaStatus">--</span></div>
       </div>
 
-      <div id="msg" class="msg">Permita o acesso à localização do celular.</div>
+      <div id="msg" class="msg">Permita o acesso à localização para iniciar do ponto onde você está.</div>
 
       <div class="actions">
-        <button id="btnMinhaPosicao">MINHA POSIÇÃO</button>
-        <button id="btnPortaria">TESTAR DA PORTARIA</button>
         <button id="btnMenos">−</button>
         <button id="btnMais">+</button>
       </div>
@@ -44,7 +42,7 @@
     <section class="map-shell">
       <div id="viewport">
         <div id="canvas">
-          <img id="mapImage" src="mapa_patio.png" alt="Mapa interno">
+          <img id="mapImage" src="mapa_patio.png?v=5" alt="Mapa interno">
           <svg id="overlay" viewBox="0 0 1414 2000" preserveAspectRatio="none">
             <polyline id="routeHalo" points="" />
             <polyline id="routeLine" points="" />
@@ -59,16 +57,10 @@
 
     <section class="warning">
       <b>Atenção:</b> siga a sinalização física, o limite de velocidade e as orientações dos colaboradores.
-      O sistema orienta a entrada até o destino selecionado; a saída não é calculada.
-    </section>
-
-    <section class="prototype">
-      <b>Versão de teste.</b> O traçado foi reconstruído a partir do caminho desenhado no mapa:
-      preto = fluxo de ida, vermelho = mão dupla. A rota azul de saída não é usada na navegação de entrada.
     </section>
   </main>
 
-  <script src="dados.js"></script>
-  <script src="app.js"></script>
+  <script src="dados.js?v=5"></script>
+  <script src="app.js?v=5"></script>
 </body>
 </html>

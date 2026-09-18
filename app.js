@@ -18,7 +18,8 @@ const canvas = byId("canvas");
 let scale = 0.45, offsetX = 0, offsetY = 0, dragStart = null;
 let gps = null;
 let gpsPixel = null;
-let forcePortaria = false;
+let screenWakeLock = null;
+let routeStarted = false;
 
 const destinos = ANCHORS.filter(a => a.id >= 1);
 destinos.forEach(d => {
@@ -168,10 +169,12 @@ function dijkstra(adj,start,target){
 }
 
 function currentOriginPixel(){
-  if(forcePortaria || !gpsPixel){
-    const p=NODES.P0; return {x:p[0],y:p[1],label:"Portaria"};
+  if(gpsPixel){
+    return {x:gpsPixel.x,y:gpsPixel.y,label:"Minha localização"};
   }
-  return {x:gpsPixel.x,y:gpsPixel.y,label:"Minha localização"};
+
+  const p=NODES.P0;
+  return {x:p[0],y:p[1],label:"Portaria"};
 }
 
 function routeToDestination(id){
@@ -218,7 +221,7 @@ function routeToDestination(id){
   centerAt(cx,cy,Math.max(.42,Math.min(s,1.45)));
 
   if(origin.label==="Portaria"){
-    msg.textContent="GPS ainda não disponível ou modo de teste ativo. Rota iniciada na Portaria.";
+    msg.textContent="Localização indisponível. Rota iniciada automaticamente na Portaria.";
   }else if(snap.d>35){
     msg.textContent="Sua localização foi ajustada para a via permitida mais próxima.";
   }else{
@@ -233,32 +236,40 @@ function failRoute(){
   msg.textContent="Não existe uma rota de entrada permitida desse ponto até o destino. Procure um colaborador.";
 }
 
-byId("btnRota").addEventListener("click",()=>{
+
+async function manterTelaAcesa(){
+  if(!("wakeLock" in navigator)) return false;
+
+  try{
+    if(screenWakeLock) return true;
+    screenWakeLock = await navigator.wakeLock.request("screen");
+
+    screenWakeLock.addEventListener("release", ()=>{
+      screenWakeLock = null;
+    });
+
+    return true;
+  }catch(e){
+    screenWakeLock = null;
+    return false;
+  }
+}
+
+document.addEventListener("visibilitychange", async ()=>{
+  if(document.visibilityState==="visible" && routeStarted && !screenWakeLock){
+    await manterTelaAcesa();
+  }
+});
+
+byId("btnRota").addEventListener("click",async ()=>{
   if(!destinoSelect.value){alert("Selecione um destino.");return;}
+
+  routeStarted = true;
+  await manterTelaAcesa();
+
   routeToDestination(destinoSelect.value);
 });
 
-byId("btnPortaria").addEventListener("click",()=>{
-  forcePortaria=true;
-  origemStatus.textContent="Portaria (teste)";
-  const p=NODES.P0;
-  gpsDot.setAttribute("cx",p[0]);gpsDot.setAttribute("cy",p[1]);
-  gpsAccuracyCircle.setAttribute("r",0);
-  centerAt(p[0],p[1],1.0);
-  msg.textContent="Modo de teste: a origem foi fixada na Portaria.";
-});
-
-byId("btnMinhaPosicao").addEventListener("click",()=>{
-  forcePortaria=false;
-  if(gpsPixel){
-    origemStatus.textContent="Minha localização";
-    gpsDot.setAttribute("cx",gpsPixel.x);gpsDot.setAttribute("cy",gpsPixel.y);
-    centerAt(gpsPixel.x,gpsPixel.y,Math.max(scale,1.0));
-    msg.textContent="Usando a localização atual do celular.";
-  }else{
-    msg.textContent="Ainda não foi possível obter sua localização.";
-  }
-});
 
 byId("btnMais").addEventListener("click",()=>{
   const cx=(viewport.clientWidth/2-offsetX)/scale,cy=(viewport.clientHeight/2-offsetY)/scale;
@@ -269,6 +280,26 @@ byId("btnMenos").addEventListener("click",()=>{
   centerAt(cx,cy,Math.max(scale/1.25,.25));
 });
 
+
+function limitarArraste(){
+  const largura = MAP_W * scale;
+  const altura = MAP_H * scale;
+  const vw = viewport.clientWidth;
+  const vh = viewport.clientHeight;
+
+  if(largura <= vw){
+    offsetX = (vw - largura) / 2;
+  }else{
+    offsetX = Math.max(vw - largura, Math.min(0, offsetX));
+  }
+
+  if(altura <= vh){
+    offsetY = (vh - altura) / 2;
+  }else{
+    offsetY = Math.max(vh - altura, Math.min(0, offsetY));
+  }
+}
+
 viewport.addEventListener("pointerdown",e=>{
   dragStart={x:e.clientX,y:e.clientY,ox:offsetX,oy:offsetY};
   viewport.setPointerCapture(e.pointerId);
@@ -277,6 +308,7 @@ viewport.addEventListener("pointermove",e=>{
   if(!dragStart)return;
   offsetX=dragStart.ox+(e.clientX-dragStart.x);
   offsetY=dragStart.oy+(e.clientY-dragStart.y);
+  limitarArraste();
   applyTransform();
 });
 viewport.addEventListener("pointerup",()=>dragStart=null);
@@ -285,10 +317,9 @@ viewport.addEventListener("pointercancel",()=>dragStart=null);
 function updateGps(pos){
   gps={lat:pos.coords.latitude,lon:pos.coords.longitude,accuracy:pos.coords.accuracy};
   gpsPixel=geoToPixel(gps.lat,gps.lon);
-  if(!forcePortaria){
-    gpsDot.setAttribute("cx",gpsPixel.x);gpsDot.setAttribute("cy",gpsPixel.y);
-    origemStatus.textContent="Minha localização";
-  }
+  gpsDot.setAttribute("cx",gpsPixel.x);
+  gpsDot.setAttribute("cy",gpsPixel.y);
+  origemStatus.textContent="Minha localização";
 
   // Círculo de precisão aproximado em pixels, calculado localmente.
   const g1=pixelToGeo(gpsPixel.x,gpsPixel.y);
@@ -298,14 +329,19 @@ function updateGps(pos){
   gpsAccuracyCircle.setAttribute("cy",gpsPixel.y);
   gpsAccuracyCircle.setAttribute("r",Math.min(gps.accuracy/mpp,250));
   gpsAccuracy.textContent=Math.round(gps.accuracy)+" m";
-  if(!forcePortaria) msg.textContent="Localização encontrada. Selecione o destino e toque em INICIAR ROTA.";
+  msg.textContent="Localização encontrada. Selecione o destino e toque em INICIAR ROTA.";
 }
 
 function gpsError(err){
+  gpsPixel = null;
   gpsAccuracy.textContent="--";
-  origemStatus.textContent="Portaria (GPS indisponível)";
-  if(err.code===1) msg.textContent="Localização não autorizada. A rota poderá ser testada a partir da Portaria.";
-  else msg.textContent="GPS indisponível no momento. A rota poderá ser testada a partir da Portaria.";
+  origemStatus.textContent="Portaria";
+
+  if(err.code===1){
+    msg.textContent="Localização não autorizada. A origem será a Portaria.";
+  }else{
+    msg.textContent="Localização indisponível. A origem será a Portaria.";
+  }
 }
 
 if("geolocation" in navigator){
