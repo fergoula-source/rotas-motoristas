@@ -2,86 +2,154 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
   <meta name="theme-color" content="#f47b20">
-  <title>Rotas Internas - Motoristas</title>
-  <link rel="stylesheet" href="style.css?v=6">
+  <meta name="color-scheme" content="light">
+  <title>Rotas Internas | Kepler Weber</title>
+  <link rel="stylesheet" href="style.css?v=7">
 </head>
 <body>
-  <header>
-    <div>
-      <h1>ROTAS INTERNAS</h1>
-      <p>Orientação para motoristas externos</p>
-    </div>
-  </header>
-
-  <main>
-    <section class="controls">
-      <label for="destino">Para onde você precisa ir?</label>
-      <select id="destino">
-        <option value="">Selecione o destino...</option>
-      </select>
-
-      <button id="btnRota" class="primary">INICIAR ROTA</button>
-
-      <div class="cards">
-        <div><b>Origem</b><span id="origemStatus">obtendo sua localização...</span></div>
-        <div><b>Precisão do GPS</b><span id="gpsAccuracy">--</span></div>
-        <div><b>Destino</b><span id="destinoStatus">nenhum</span></div>
-        <div><b>Distância aprox.</b><span id="distanciaStatus">--</span></div>
-      </div>
-
-      <div id="msg" class="msg">Permita o acesso à localização para iniciar do ponto onde você está.</div>
-
-      <div class="actions">
-        <button id="btnMenos">−</button>
-        <button id="btnMais">+</button>
-      </div>
-    </section>
-
-    <section class="map-shell">
-      <div id="viewport">
-        <div id="canvas">
-          <img id="mapImage" src="mapa_patio.png?v=6" alt="Mapa interno">
-          <svg id="overlay" viewBox="0 0 1414 2000" preserveAspectRatio="none">
-            <polyline id="routeHalo" points="" />
-            <polyline id="routeLine" points="" />
-            <circle id="snapDot" cx="-100" cy="-100" r="7" />
-            <circle id="gpsAccuracyCircle" cx="-100" cy="-100" r="0" />
-            <circle id="gpsDot" cx="-100" cy="-100" r="13" />
-            <circle id="destDot" cx="-100" cy="-100" r="14" />
-          </svg>
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-logo-wrap">
+          <img class="brand-logo" src="logo_kepler.png?v=7" alt="Kepler Weber">
+        </div>
+        <div class="brand-copy">
+          <h1>Rotas Internas</h1>
+          <p>Orientação de acesso aos pontos de carregamento</p>
         </div>
       </div>
-    </section>
+      <div id="gpsBadge" class="gps-badge is-searching" aria-live="polite">
+        <span class="gps-dot"></span>
+        <span id="gpsBadgeText">Buscando GPS...</span>
+      </div>
+    </header>
 
-    <section class="warning">
-      <b>Atenção:</b> siga a sinalização física, o limite de velocidade e as orientações dos colaboradores.
-    </section>
-  </main>
+    <main class="workspace">
+      <aside class="control-card">
+        <div class="eyebrow">NAVEGAÇÃO INTERNA</div>
+        <h2>Para onde você precisa ir?</h2>
+        <p class="intro">
+          Se a localização estiver disponível, a rota começa exatamente do ponto onde você está.
+          Caso contrário, a Portaria é usada como origem.
+        </p>
 
+        <label class="field-label" for="destino">Destino</label>
+        <select id="destino" class="destination-select">
+          <option value="">Selecione o destino...</option>
+        </select>
+
+        <button id="btnRota" class="start-button" type="button">
+          <span>INICIAR ROTA</span>
+          <span class="button-arrow">→</span>
+        </button>
+
+        <div class="status-grid">
+          <div class="status-card">
+            <span class="status-label">Origem</span>
+            <strong id="origemStatus">Obtendo localização...</strong>
+          </div>
+          <div class="status-card">
+            <span class="status-label">Precisão</span>
+            <strong id="gpsAccuracy">--</strong>
+          </div>
+          <div class="status-card">
+            <span class="status-label">Destino</span>
+            <strong id="destinoStatus">Nenhum</strong>
+          </div>
+          <div class="status-card">
+            <span class="status-label">Distância</span>
+            <strong id="distanciaStatus">--</strong>
+          </div>
+        </div>
+
+        <div id="msg" class="route-message" aria-live="polite">
+          Permita o acesso à localização para usar o GPS em tempo real.
+        </div>
+
+        <div id="accessInfo" class="access-info hidden">
+          <span class="access-line-sample"></span>
+          <span id="accessInfoText">Acesso até a via interna</span>
+        </div>
+
+        <div class="safety-note">
+          <div class="speed-sign">
+            <span>20</span>
+            <small>km/h</small>
+          </div>
+          <div>
+            <strong>Dirija com atenção</strong>
+            <p>Siga a sinalização física, o limite de velocidade e as orientações dos colaboradores.</p>
+          </div>
+        </div>
+      </aside>
+
+      <section class="map-card">
+        <div class="map-header">
+          <div>
+            <span class="map-kicker">MAPA INTERNO</span>
+            <strong id="mapStatus">Aguardando destino</strong>
+          </div>
+          <span id="wakeStatus" class="wake-status">Tela ativa ao navegar</span>
+        </div>
+
+        <div id="viewport" class="viewport">
+          <div id="canvas" class="map-canvas">
+            <img id="mapImage" src="mapa_patio.png?v=7" alt="Mapa dos pontos de carregamento">
+
+            <svg id="overlay" class="map-overlay" viewBox="0 0 1414 2000" preserveAspectRatio="none" aria-hidden="true">
+              <polyline id="routeHalo" class="route-halo" points=""></polyline>
+              <polyline id="routeLine" class="route-line" points=""></polyline>
+              <polyline id="approachLine" class="approach-line" points=""></polyline>
+
+              <circle id="gpsAccuracyCircle" class="gps-accuracy-circle" cx="-100" cy="-100" r="0"></circle>
+              <circle id="gpsPulse" class="gps-pulse" cx="-100" cy="-100" r="20"></circle>
+              <circle id="gpsDot" class="gps-location-dot" cx="-100" cy="-100" r="12"></circle>
+
+              <circle id="snapDot" class="snap-dot" cx="-100" cy="-100" r="6"></circle>
+              <circle id="destDot" class="destination-dot" cx="-100" cy="-100" r="14"></circle>
+            </svg>
+          </div>
+
+          <div class="map-controls" aria-label="Controles do mapa">
+            <button id="btnCenter" class="map-control primary-control" type="button" title="Centralizar na localização">⌖</button>
+            <button id="btnMais" class="map-control" type="button" title="Aumentar zoom">+</button>
+            <button id="btnMenos" class="map-control" type="button" title="Diminuir zoom">−</button>
+          </div>
+
+          <div class="map-legend">
+            <span><i class="legend-current"></i>Você</span>
+            <span><i class="legend-route"></i>Rota</span>
+            <span><i class="legend-access"></i>Acesso à via</span>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <span>Rotas Internas • Logística</span>
+      <span>Uso orientativo dentro da unidade</span>
+    </footer>
+  </div>
 
   <div id="locationModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="locationTitle">
     <div class="modal-card">
-      <div class="location-icon">📍</div>
+      <div class="modal-pin">📍</div>
+      <span class="modal-kicker">LOCALIZAÇÃO</span>
       <h2 id="locationTitle">Ative sua localização</h2>
       <p id="locationText">
-        Para iniciar a rota do ponto onde você está, permita o acesso à localização.
+        Para iniciar a rota exatamente do ponto onde você está, permita o acesso à localização.
       </p>
 
       <div id="locationHelp" class="location-help hidden"></div>
 
-      <button id="btnEnableLocation" class="modal-primary">
-        ATIVAR LOCALIZAÇÃO
-      </button>
-
-      <button id="btnUseGate" class="modal-secondary">
-        CONTINUAR PELA PORTARIA
-      </button>
+      <button id="btnEnableLocation" class="modal-primary" type="button">ATIVAR LOCALIZAÇÃO</button>
+      <button id="btnUseGate" class="modal-secondary" type="button">CONTINUAR PELA PORTARIA</button>
     </div>
   </div>
 
-  <script src="dados.js?v=6"></script>
-  <script src="app.js?v=6"></script>
+  <script src="dados.js?v=7"></script>
+  <script src="app.js?v=7"></script>
 </body>
 </html>

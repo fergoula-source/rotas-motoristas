@@ -462,6 +462,10 @@ const NODES = {
   "D16": [
     1326.83,
     612.3
+  ],
+  "D2X": [
+    521.72,
+    1478.0
   ]
 };
 const EDGES = [
@@ -702,44 +706,44 @@ const EDGES = [
   {
     "a": "D1",
     "b": "L12b",
-    "mode": "one",
-    "kind": "black"
+    "mode": "both",
+    "kind": "red"
   },
   {
     "a": "L12b",
     "b": "L12c",
-    "mode": "one",
-    "kind": "black"
+    "mode": "both",
+    "kind": "red"
   },
   {
     "a": "L12c",
     "b": "L12d",
-    "mode": "one",
-    "kind": "black"
+    "mode": "both",
+    "kind": "red"
   },
   {
     "a": "L12d",
     "b": "L12e",
-    "mode": "one",
-    "kind": "black"
+    "mode": "both",
+    "kind": "red"
   },
   {
     "a": "L12e",
     "b": "D2",
-    "mode": "one",
-    "kind": "black"
+    "mode": "both",
+    "kind": "red"
   },
   {
     "a": "R1",
     "b": "D3",
-    "mode": "one",
-    "kind": "black"
+    "mode": "both",
+    "kind": "red"
   },
   {
     "a": "R2",
     "b": "D4",
-    "mode": "one",
-    "kind": "black"
+    "mode": "both",
+    "kind": "red"
   },
   {
     "a": "R3",
@@ -786,116 +790,116 @@ const EDGES = [
   {
     "a": "J2",
     "b": "U1",
-    "mode": "one",
-    "kind": "black"
+    "mode": "both",
+    "kind": "red"
   },
   {
     "a": "U1",
     "b": "U2",
-    "mode": "one",
-    "kind": "black"
+    "mode": "both",
+    "kind": "red"
   },
   {
     "a": "U2",
     "b": "U3",
-    "mode": "one",
-    "kind": "black"
+    "mode": "both",
+    "kind": "red"
   },
   {
     "a": "U3",
     "b": "U4",
-    "mode": "one",
-    "kind": "black"
+    "mode": "both",
+    "kind": "red"
   },
   {
     "a": "U4",
     "b": "D9",
-    "mode": "one",
-    "kind": "black"
+    "mode": "both",
+    "kind": "red"
   },
   {
     "a": "D9",
     "b": "U5",
-    "mode": "one",
-    "kind": "black"
+    "mode": "both",
+    "kind": "red"
   },
   {
     "a": "U5",
     "b": "U6",
-    "mode": "one",
-    "kind": "black"
+    "mode": "both",
+    "kind": "red"
   },
   {
     "a": "U6",
     "b": "U7",
-    "mode": "one",
-    "kind": "black"
+    "mode": "both",
+    "kind": "red"
   },
   {
     "a": "U7",
     "b": "D8",
-    "mode": "one",
-    "kind": "black"
+    "mode": "both",
+    "kind": "red"
   },
   {
     "a": "U4",
     "b": "U7a",
-    "mode": "one",
-    "kind": "black"
+    "mode": "both",
+    "kind": "red"
   },
   {
     "a": "U7a",
     "b": "U7b",
-    "mode": "one",
-    "kind": "black"
+    "mode": "both",
+    "kind": "red"
   },
   {
     "a": "U7b",
     "b": "D7",
-    "mode": "one",
-    "kind": "black"
+    "mode": "both",
+    "kind": "red"
   },
   {
     "a": "U3",
     "b": "D12",
-    "mode": "one",
-    "kind": "black"
+    "mode": "both",
+    "kind": "red"
   },
   {
     "a": "J2",
     "b": "U11a",
-    "mode": "one",
-    "kind": "black"
+    "mode": "both",
+    "kind": "red"
   },
   {
     "a": "U11a",
     "b": "U11b",
-    "mode": "one",
-    "kind": "black"
+    "mode": "both",
+    "kind": "red"
   },
   {
     "a": "U11b",
     "b": "U11c",
-    "mode": "one",
-    "kind": "black"
+    "mode": "both",
+    "kind": "red"
   },
   {
     "a": "U11c",
     "b": "D11",
-    "mode": "one",
-    "kind": "black"
+    "mode": "both",
+    "kind": "red"
   },
   {
     "a": "S6",
     "b": "D10",
-    "mode": "one",
-    "kind": "black"
+    "mode": "both",
+    "kind": "red"
   },
   {
     "a": "J13",
     "b": "D13",
-    "mode": "one",
-    "kind": "black"
+    "mode": "both",
+    "kind": "red"
   },
   {
     "a": "J14",
@@ -918,14 +922,32 @@ const EDGES = [
   {
     "a": "J15",
     "b": "J15b",
-    "mode": "one",
-    "kind": "black"
+    "mode": "both",
+    "kind": "red"
   },
   {
     "a": "J15b",
     "b": "D15",
-    "mode": "one",
-    "kind": "black"
+    "mode": "both",
+    "kind": "red"
+  },
+  {
+    "a": "D2",
+    "b": "D2X",
+    "mode": "both",
+    "kind": "red"
+  },
+  {
+    "a": "D2X",
+    "b": "R0",
+    "mode": "both",
+    "kind": "red"
+  },
+  {
+    "a": "D6",
+    "b": "R1",
+    "mode": "both",
+    "kind": "red"
   }
 ];
 const DEST_NODE = {
