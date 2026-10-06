@@ -76,3 +76,12 @@ VALIDAÇÃO RECOMENDADA ANTES DA LIBERAÇÃO
 VERSÃO
 ------
 V7 – 06/10/2026
+
+
+AJUSTE V7.1 - PONTO DE CARREGAMENTO 2
+-------------------------------------
+O acesso de entrada ao Ponto 2 deve obrigatoriamente seguir o contorno
+preto ao redor da área do Ponto 1.
+
+O pequeno trecho inferior ligado ao Ponto 2 é tratado somente como saída.
+Assim, o algoritmo não pode mais utilizar esse trecho como atalho de entrada.

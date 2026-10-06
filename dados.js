@@ -934,8 +934,8 @@ const EDGES = [
   {
     "a": "D2",
     "b": "D2X",
-    "mode": "both",
-    "kind": "red"
+    "mode": "one",
+    "kind": "blue"
   },
   {
     "a": "D2X",
