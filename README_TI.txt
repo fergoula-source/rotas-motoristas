@@ -85,3 +85,26 @@ preto ao redor da área do Ponto 1.
 
 O pequeno trecho inferior ligado ao Ponto 2 é tratado somente como saída.
 Assim, o algoritmo não pode mais utilizar esse trecho como atalho de entrada.
+
+
+AJUSTE V7.2 - CALIBRAÇÃO DE GEOLOCALIZAÇÃO
+------------------------------------------
+Foram adicionados 9 pontos de controle internos para melhorar a conversão
+entre latitude/longitude e a posição visual no mapa:
+
+- Entrada Ferramentaria
+- Entrada Almoxarifado
+- Meio da Montagem
+- Meio da Pintura
+- Meio da Fábrica Central
+- Meio da Administração
+- Entrada do Refeitório
+- Meio da Fábrica de Silos
+- Meio da Central de Resíduos
+
+A conversão continua sendo local, no navegador, porém agora usa uma malha
+triangulada mais densa. Isso reduz desvios visuais em regiões que antes
+dependiam apenas das coordenadas dos pontos de carregamento.
+
+As rotas e sentidos da V7.1 foram preservados, inclusive a volta obrigatória
+de entrada para o Ponto de Carregamento 2.
