@@ -182,11 +182,13 @@ function insideWeights(w){
 
 function geoToPixel(lat, lon){
   const p = [lon, lat];
+  const calAnchors = (typeof GEO_ANCHORS !== "undefined" && GEO_ANCHORS.length) ? GEO_ANCHORS : ANCHORS;
+  const calTriGeo = (typeof GEO_TRI_GEO !== "undefined" && GEO_TRI_GEO.length) ? GEO_TRI_GEO : TRI_GEO;
 
-  for(const tri of TRI_GEO){
-    const A = ANCHORS[tri[0]];
-    const B = ANCHORS[tri[1]];
-    const C = ANCHORS[tri[2]];
+  for(const tri of calTriGeo){
+    const A = calAnchors[tri[0]];
+    const B = calAnchors[tri[1]];
+    const C = calAnchors[tri[2]];
 
     const w = barycentric(p, [A.lon,A.lat], [B.lon,B.lat], [C.lon,C.lat]);
 
@@ -198,7 +200,7 @@ function geoToPixel(lat, lon){
     }
   }
 
-  const near = [...ANCHORS]
+  const near = [...calAnchors]
     .sort((a,b)=>{
       const da = (a.lat-lat)**2 + (a.lon-lon)**2;
       const db = (b.lat-lat)**2 + (b.lon-lon)**2;
@@ -221,11 +223,13 @@ function geoToPixel(lat, lon){
 
 function pixelToGeo(x,y){
   const p = [x,y];
+  const calAnchors = (typeof GEO_ANCHORS !== "undefined" && GEO_ANCHORS.length) ? GEO_ANCHORS : ANCHORS;
+  const calTriPix = (typeof GEO_TRI_PIX !== "undefined" && GEO_TRI_PIX.length) ? GEO_TRI_PIX : TRI_PIX;
 
-  for(const tri of TRI_PIX){
-    const A = ANCHORS[tri[0]];
-    const B = ANCHORS[tri[1]];
-    const C = ANCHORS[tri[2]];
+  for(const tri of calTriPix){
+    const A = calAnchors[tri[0]];
+    const B = calAnchors[tri[1]];
+    const C = calAnchors[tri[2]];
 
     const w = barycentric(p, [A.x,A.y], [B.x,B.y], [C.x,C.y]);
 
@@ -237,7 +241,7 @@ function pixelToGeo(x,y){
     }
   }
 
-  const near = [...ANCHORS]
+  const near = [...calAnchors]
     .sort((a,b)=>{
       const da = (a.x-x)**2 + (a.y-y)**2;
       const db = (b.x-x)**2 + (b.y-y)**2;
@@ -309,64 +313,73 @@ function isPixelInsideCampus(p){
     p.y >= -100 && p.y <= MAP_H + 100;
 }
 
-function makeAdjacency(extraStartPixel){
-  const adj = {};
-  Object.keys(NODES).forEach(n => adj[n] = []);
+function localMeters(lat,lon,refLat){
+  const rad = Math.PI / 180;
+  return {
+    x:lon * 111320 * Math.cos(refLat * rad),
+    y:lat * 110540
+  };
+}
 
+function geographicProjectionOnSegment(originGeo,aPixel,bPixel){
+  const ga = pixelToGeo(aPixel[0],aPixel[1]);
+  const gb = pixelToGeo(bPixel[0],bPixel[1]);
+  const refLat = originGeo.lat;
+  const p = localMeters(originGeo.lat,originGeo.lon,refLat);
+  const a = localMeters(ga.lat,ga.lon,refLat);
+  const b = localMeters(gb.lat,gb.lon,refLat);
+  const vx = b.x-a.x, vy = b.y-a.y;
+  const wx = p.x-a.x, wy = p.y-a.y;
+  const vv = vx*vx + vy*vy;
+  let t = vv===0 ? 0 : (wx*vx + wy*vy)/vv;
+  t = clamp(t,0,1);
+  const qPixel=[
+    aPixel[0] + t*(bPixel[0]-aPixel[0]),
+    aPixel[1] + t*(bPixel[1]-aPixel[1])
+  ];
+  const qGeo={
+    lat:ga.lat + t*(gb.lat-ga.lat),
+    lon:ga.lon + t*(gb.lon-ga.lon)
+  };
+  return {q:qPixel,qGeo,t,dMeters:haversine(originGeo,qGeo)};
+}
+
+function baseAdjacency(){
+  const adj={};
+  Object.keys(NODES).forEach(n=>adj[n]=[]);
   for(const e of EDGES){
-    const a = NODES[e.a];
-    const b = NODES[e.b];
-    const w = pixelDistanceMeters(a,b);
-
+    const a=NODES[e.a], b=NODES[e.b];
+    const w=pixelDistanceMeters(a,b);
     adj[e.a].push({to:e.b,w});
-
-    if(e.mode === "both"){
-      adj[e.b].push({to:e.a,w});
-    }
+    if(e.mode === "both") adj[e.b].push({to:e.a,w});
   }
+  return adj;
+}
 
-  let snap = null;
-
-  if(extraStartPixel){
-    for(let i=0; i<EDGES.length; i++){
-      const e = EDGES[i];
-      const a = NODES[e.a];
-      const b = NODES[e.b];
-
-      const pr = projectionOnSegment(
-        [extraStartPixel.x, extraStartPixel.y],
-        a,
-        b
-      );
-
-      if(!snap || pr.dPx < snap.dPx){
-        snap = {...pr, e, index:i};
-      }
-    }
-
-    adj.START = [];
-
-    const e = snap.e;
-    const a = NODES[e.a];
-    const b = NODES[e.b];
-    const total = pixelDistanceMeters(a,b);
-
-    // O ponto real entra na rede no ponto mais próximo.
-    // Em via de mão única, respeita o sentido a -> b.
-    adj.START.push({
-      to:e.b,
-      w:(1-snap.t)*total
-    });
-
-    if(e.mode === "both"){
-      adj.START.push({
-        to:e.a,
-        w:snap.t*total
-      });
-    }
+function snapCandidates(originGeo){
+  const list=[];
+  for(let i=0;i<EDGES.length;i++){
+    const e=EDGES[i];
+    // Área roxa/proibida nunca é ponto de entrada para caminhão.
+    if(e.kind === "purple") continue;
+    const a=NODES[e.a], b=NODES[e.b];
+    const pr=geographicProjectionOnSegment(originGeo,a,b);
+    list.push({...pr,e,index:i});
   }
+  list.sort((a,b)=>a.dMeters-b.dMeters);
+  return list;
+}
 
-  return {adj,snap};
+function adjacencyWithSnap(snap){
+  const adj=baseAdjacency();
+  adj.START=[];
+  const e=snap.e;
+  const a=NODES[e.a], b=NODES[e.b];
+  const total=pixelDistanceMeters(a,b);
+  // Em qualquer segmento, o motorista só segue sentidos permitidos pelo mapa final.
+  adj.START.push({to:e.b,w:(1-snap.t)*total});
+  if(e.mode === "both") adj.START.push({to:e.a,w:snap.t*total});
+  return adj;
 }
 
 function dijkstra(adj,start,target){
@@ -472,52 +485,62 @@ function buildRoute(id){
 
   const origin = currentOrigin();
 
-  if(!origin.isGps){
-    const {adj} = makeAdjacency(null);
+  if(!origin.isGps || !gps){
+    const adj = baseAdjacency();
     const result = dijkstra(adj,"P0",target);
-
     if(!result) return null;
-
     return {
       origin,
       result,
-      snap:{q:NODES.P0,dPx:0},
+      snap:{q:NODES.P0,dMeters:0},
       approachMeters:0,
       networkPoints:result.path.map(n=>NODES[n]),
       allPoints:result.path.map(n=>NODES[n])
     };
   }
 
-  const built = makeAdjacency(origin);
-  const result = dijkstra(built.adj,"START",target);
+  const originGeo={lat:gps.lat,lon:gps.lon};
+  const candidates=snapCandidates(originGeo);
+  if(!candidates.length) return null;
 
-  if(!built.snap || !result) return null;
+  const nearest=candidates[0].dMeters;
+  let best=null;
 
-  const networkPoints = [
-    built.snap.q,
-    ...result.path
-      .filter(n => n !== "START")
-      .map(n => NODES[n])
+  // Se o GPS já está sobre/ao lado de uma via mapeada, essa via manda.
+  // Isso impede "pular" de uma mão única para outra rua só para inventar uma rota.
+  if(nearest <= 25){
+    const snap=candidates[0];
+    const result=dijkstra(adjacencyWithSnap(snap),"START",target);
+    if(result) best={snap,result};
+  }else{
+    // Fora da pista (por exemplo, pessoa a pé): procura a via válida mais próxima.
+    const limits=[Math.max(40,nearest+15),Math.max(65,nearest+35),Infinity];
+    for(const limit of limits){
+      for(const snap of candidates){
+        if(snap.dMeters>limit) break;
+        const result=dijkstra(adjacencyWithSnap(snap),"START",target);
+        if(!result) continue;
+        best={snap,result};
+        break;
+      }
+      if(best) break;
+    }
+  }
+
+  if(!best) return null;
+
+  const networkPoints=[
+    best.snap.q,
+    ...best.result.path.filter(n=>n!=="START").map(n=>NODES[n])
   ];
-
-  const approachMeters = pixelDistanceMeters(
-    [origin.x,origin.y],
-    built.snap.q
-  );
 
   return {
     origin,
-    result,
-    snap:built.snap,
-    approachMeters,
+    result:best.result,
+    snap:best.snap,
+    approachMeters:best.snap.dMeters,
     networkPoints,
-    allPoints:[
-      [origin.x,origin.y],
-      built.snap.q,
-      ...result.path
-        .filter(n => n !== "START")
-        .map(n => NODES[n])
-    ]
+    allPoints:[[origin.x,origin.y],best.snap.q,...best.result.path.filter(n=>n!=="START").map(n=>NODES[n])]
   };
 }
 
