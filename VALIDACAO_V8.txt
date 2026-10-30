@@ -1,0 +1,37 @@
+ROTAS INTERNAS V8 - VALIDAÇÃO
+
+Patch criado sobre os arquivos oficiais atuais da branch dev.
+
+SUBSTITUIR SOMENTE EM frontend/public:
+- app.js
+- dados.js
+- index.html
+
+PRESERVADO:
+- style.css
+- env-banner.js
+- /env.js
+- favicons
+- logo_kepler.png
+- mapa_patio.png
+- Docker / Nginx / package / CI-CD
+
+VALIDAÇÕES EXECUTADAS:
+- sintaxe JavaScript de app.js: OK
+- sintaxe JavaScript de dados.js: OK
+- destinos 1 a 17 alcançáveis a partir da Portaria: OK
+- ponto 2: entrada somente pela volta completa
+- pontos 4, 5 e 6: entrada/saída corrigidas conforme mapa validado
+- pontos 7, 8, 9, 11 e 12: corredor superior reconstruído
+- ponto 10: acesso dedicado
+- área M: fora da malha de caminhões
+- calibração GPS: pontos levantados em campo incorporados
+- início de rota: cálculo do acesso mais próximo em coordenadas geográficas
+- marcador GPS: continua representando a posição real, sem ser deslocado para a via
+
+Antes da produção:
+1. criar branch nova a partir da dev atual;
+2. substituir apenas os 3 arquivos;
+3. testar em QAS/dev os 17 destinos;
+4. abrir Merge Request para dev;
+5. após aprovação/pipeline, promover conforme fluxo da TI.
