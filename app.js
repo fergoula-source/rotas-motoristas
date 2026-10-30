@@ -1,3 +1,4 @@
+// Rotas Internas V9 - GPS real + rota fixa por destino
 const byId = id => document.getElementById(id);
 
 const destinoSelect = byId("destino");
@@ -184,9 +185,9 @@ function geoToPixel(lat, lon){
   const p = [lon, lat];
 
   for(const tri of TRI_GEO){
-    const A = ANCHORS[tri[0]];
-    const B = ANCHORS[tri[1]];
-    const C = ANCHORS[tri[2]];
+    const A = GEO_ANCHORS[tri[0]];
+    const B = GEO_ANCHORS[tri[1]];
+    const C = GEO_ANCHORS[tri[2]];
 
     const w = barycentric(p, [A.lon,A.lat], [B.lon,B.lat], [C.lon,C.lat]);
 
@@ -198,7 +199,7 @@ function geoToPixel(lat, lon){
     }
   }
 
-  const near = [...ANCHORS]
+  const near = [...GEO_ANCHORS]
     .sort((a,b)=>{
       const da = (a.lat-lat)**2 + (a.lon-lon)**2;
       const db = (b.lat-lat)**2 + (b.lon-lon)**2;
@@ -223,9 +224,9 @@ function pixelToGeo(x,y){
   const p = [x,y];
 
   for(const tri of TRI_PIX){
-    const A = ANCHORS[tri[0]];
-    const B = ANCHORS[tri[1]];
-    const C = ANCHORS[tri[2]];
+    const A = GEO_ANCHORS[tri[0]];
+    const B = GEO_ANCHORS[tri[1]];
+    const C = GEO_ANCHORS[tri[2]];
 
     const w = barycentric(p, [A.x,A.y], [B.x,B.y], [C.x,C.y]);
 
@@ -237,7 +238,7 @@ function pixelToGeo(x,y){
     }
   }
 
-  const near = [...ANCHORS]
+  const near = [...GEO_ANCHORS]
     .sort((a,b)=>{
       const da = (a.x-x)**2 + (a.y-y)**2;
       const db = (b.x-x)**2 + (b.y-y)**2;
@@ -309,174 +310,28 @@ function isPixelInsideCampus(p){
     p.y >= -100 && p.y <= MAP_H + 100;
 }
 
-function projectGeoToSegment(p,a,b){
-  const rad = Math.PI / 180;
-  const meanLat = ((a.lat + b.lat + p.lat) / 3) * rad;
-  const metersPerLat = 111320;
-  const metersPerLon = 111320 * Math.cos(meanLat);
+function projectOnFixedRoute(p, route){
+  let best = null;
 
-  const ax = a.lon * metersPerLon;
-  const ay = a.lat * metersPerLat;
-  const bx = b.lon * metersPerLon;
-  const by = b.lat * metersPerLat;
-  const px = p.lon * metersPerLon;
-  const py = p.lat * metersPerLat;
+  for(let i=0; i<route.length-1; i++){
+    const pr = projectionOnSegment(p,route[i],route[i+1]);
 
-  const vx = bx - ax;
-  const vy = by - ay;
-  const wx = px - ax;
-  const wy = py - ay;
-  const vv = vx*vx + vy*vy;
-
-  let t = vv === 0 ? 0 : (wx*vx + wy*vy) / vv;
-  t = clamp(t,0,1);
-
-  const qx = ax + t*vx;
-  const qy = ay + t*vy;
-
-  return {
-    t,
-    dMeters:Math.hypot(px-qx,py-qy),
-    qGeo:{
-      lat:a.lat + t*(b.lat-a.lat),
-      lon:a.lon + t*(b.lon-a.lon)
+    if(!best || pr.dPx < best.dPx){
+      best = {...pr, segmentIndex:i};
     }
-  };
+  }
+
+  return best;
 }
 
-function makeAdjacency(extraStartGeo){
-  const adj = {};
-  Object.keys(NODES).forEach(n => adj[n] = []);
+function polylineDistanceMeters(points){
+  let total = 0;
 
-  for(const e of EDGES){
-    const aGeo = NODE_GEO[e.a];
-    const bGeo = NODE_GEO[e.b];
-    const w = haversine(aGeo,bGeo);
-
-    adj[e.a].push({to:e.b,w});
-
-    if(e.mode === "both"){
-      adj[e.b].push({to:e.a,w});
-    }
+  for(let i=1; i<points.length; i++){
+    total += pixelDistanceMeters(points[i-1],points[i]);
   }
 
-  const startOptions = [];
-
-  if(extraStartGeo){
-    const candidates = [];
-
-    for(let i=0; i<EDGES.length; i++){
-      const e = EDGES[i];
-      const aGeo = NODE_GEO[e.a];
-      const bGeo = NODE_GEO[e.b];
-      const pr = projectGeoToSegment(extraStartGeo,aGeo,bGeo);
-
-      const aPx = NODES[e.a];
-      const bPx = NODES[e.b];
-      const q = [
-        aPx[0] + pr.t*(bPx[0]-aPx[0]),
-        aPx[1] + pr.t*(bPx[1]-aPx[1])
-      ];
-
-      candidates.push({...pr,q,e,index:i});
-    }
-
-    candidates.sort((a,b)=>a.dMeters-b.dMeters);
-
-    const nearest = candidates[0]?.dMeters ?? Infinity;
-    const usable = candidates
-      .filter(c => c.dMeters <= Math.min(90,nearest + 35))
-      .slice(0,8);
-
-    adj.START = [];
-
-    for(const c of usable){
-      const e = c.e;
-      const total = haversine(NODE_GEO[e.a],NODE_GEO[e.b]);
-
-      const forward = {
-        to:e.b,
-        w:c.dMeters + (1-c.t)*total,
-        approachMeters:c.dMeters,
-        q:c.q,
-        qGeo:c.qGeo,
-        edge:e
-      };
-
-      adj.START.push({to:forward.to,w:forward.w});
-      startOptions.push(forward);
-
-      if(e.mode === "both"){
-        const backward = {
-          to:e.a,
-          w:c.dMeters + c.t*total,
-          approachMeters:c.dMeters,
-          q:c.q,
-          qGeo:c.qGeo,
-          edge:e
-        };
-
-        adj.START.push({to:backward.to,w:backward.w});
-        startOptions.push(backward);
-      }
-    }
-  }
-
-  return {adj,startOptions};
-}
-
-function dijkstra(adj,start,target){
-  const dist = {};
-  const prev = {};
-  const used = new Set();
-
-  Object.keys(adj).forEach(k => dist[k] = Infinity);
-  dist[start] = 0;
-
-  while(true){
-    let u = null;
-    let best = Infinity;
-
-    for(const k of Object.keys(adj)){
-      if(!used.has(k) && dist[k] < best){
-        best = dist[k];
-        u = k;
-      }
-    }
-
-    if(u === null) break;
-    if(u === target) break;
-
-    used.add(u);
-
-    for(const e of adj[u] || []){
-      const nd = dist[u] + e.w;
-
-      if(nd < dist[e.to]){
-        dist[e.to] = nd;
-        prev[e.to] = u;
-      }
-    }
-  }
-
-  if(!isFinite(dist[target])) return null;
-
-  const path = [];
-  let u = target;
-
-  while(u !== undefined){
-    path.push(u);
-
-    if(u === start) break;
-    u = prev[u];
-  }
-
-  path.reverse();
-
-  return {
-    path,
-    distance:dist[target]
-  };
+  return total;
 }
 
 function clearRoute(){
@@ -504,7 +359,7 @@ function currentOrigin(){
     };
   }
 
-  const p = NODES.P0;
+  const p = PORTARIA_PIXEL;
 
   return {
     x:p[0],
@@ -523,68 +378,49 @@ function routeDistanceLabel(meters){
 }
 
 function buildRoute(id){
-  const target = DEST_NODE[id];
-  if(!target) return null;
+  const route = FIXED_ROUTES[String(id)];
+  const destPixel = DEST_PIXELS[String(id)];
+
+  if(!route || route.length < 2 || !destPixel) return null;
 
   const origin = currentOrigin();
 
   if(!origin.isGps){
-    const {adj} = makeAdjacency(null);
-    const result = dijkstra(adj,"P0",target);
-
-    if(!result) return null;
+    const routeMeters = polylineDistanceMeters(route);
 
     return {
       origin,
-      result,
-      snap:{q:NODES.P0,dMeters:0},
+      result:{distance:routeMeters},
+      snap:{q:route[0],dPx:0,segmentIndex:0},
       approachMeters:0,
-      networkPoints:result.path.map(n=>NODES[n]),
-      allPoints:result.path.map(n=>NODES[n]),
-      totalMeters:result.distance
+      networkPoints:route,
+      allPoints:route,
+      destPixel
     };
   }
 
-  const built = makeAdjacency({lat:gps.lat,lon:gps.lon});
-  const result = dijkstra(built.adj,"START",target);
+  // GPS stays exactly where it is. Only the route calculation is connected
+  // to the nearest point ON THE SELECTED DESTINATION'S APPROVED ROUTE.
+  const snap = projectOnFixedRoute([origin.x,origin.y],route);
+  if(!snap) return null;
 
-  if(!result || !built.startOptions.length) return null;
-
-  const firstNode = result.path.find(n => n !== "START");
-  const chosen = built.startOptions
-    .filter(o => o.to === firstNode)
-    .sort((a,b)=>a.w-b.w)[0];
-
-  if(!chosen) return null;
-
-  const networkPoints = [
-    chosen.q,
-    ...result.path
-      .filter(n => n !== "START")
-      .map(n => NODES[n])
-  ];
+  const remaining = [snap.q, ...route.slice(snap.segmentIndex+1)];
+  const routeMeters = polylineDistanceMeters(remaining);
+  const approachMeters = pixelDistanceMeters([origin.x,origin.y],snap.q);
 
   return {
     origin,
-    result,
-    snap:{q:chosen.q,dMeters:chosen.approachMeters},
-    approachMeters:chosen.approachMeters,
-    networkPoints,
-    allPoints:[
-      [origin.x,origin.y],
-      chosen.q,
-      ...result.path
-        .filter(n => n !== "START")
-        .map(n => NODES[n])
-    ],
-    totalMeters:result.distance
+    result:{distance:routeMeters},
+    snap,
+    approachMeters,
+    networkPoints:remaining,
+    allPoints:[[origin.x,origin.y],snap.q,...route.slice(snap.segmentIndex+1)],
+    destPixel
   };
 }
 
 async function renderRoute(id, options = {}){
   const {fit=true, quiet=false} = options;
-  const target = DEST_NODE[id];
-
   const data = buildRoute(id);
 
   if(!data){
@@ -601,7 +437,7 @@ async function renderRoute(id, options = {}){
   origemStatus.textContent = data.origin.label;
   destinoStatus.textContent = d ? d.nome : `Ponto ${id}`;
 
-  const totalMeters = data.totalMeters ?? data.result.distance;
+  const totalMeters = data.result.distance + data.approachMeters;
   distanciaStatus.textContent = routeDistanceLabel(totalMeters);
 
   const routePointsText = data.networkPoints
@@ -628,8 +464,8 @@ async function renderRoute(id, options = {}){
   snapDot.setAttribute("cx",data.snap.q[0]);
   snapDot.setAttribute("cy",data.snap.q[1]);
 
-  destDot.setAttribute("cx",NODES[target][0]);
-  destDot.setAttribute("cy",NODES[target][1]);
+  destDot.setAttribute("cx",data.destPixel[0]);
+  destDot.setAttribute("cy",data.destPixel[1]);
 
   mapStatus.textContent = d ? `Rota para ${d.nome}` : "Rota ativa";
 
@@ -902,7 +738,7 @@ byId("btnCenter").addEventListener("click",()=>{
   if(gpsPixel && isPixelInsideCampus(gpsPixel)){
     centerAt(gpsPixel.x,gpsPixel.y,Math.max(scale,minScale*2.2));
   }else{
-    const p = NODES.P0;
+    const p = PORTARIA_PIXEL;
     centerAt(p[0],p[1],Math.max(scale,minScale*2.2));
   }
 });

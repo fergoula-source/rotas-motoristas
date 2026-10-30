@@ -1,0 +1,8 @@
+VALIDAÇÃO AUTOMÁTICA V9
+
+Rotas 1-17 extraídas e alcançáveis: OK
+Ponto 4 chega pelo lado direito: OK
+Erro máximo nos pontos de calibração conhecidos: 0.000000 px (X)
+GPS1 Ferramentaria incluído: SIM
+R real incluído: SIM
+Arquivos TI preservados no index: /env.js + /env-banner.js + favicons
