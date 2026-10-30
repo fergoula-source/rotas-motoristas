@@ -1,0 +1,43 @@
+ROTAS INTERNAS - V10 (LÓGICA ANTIGA + CORREÇÕES)
+
+Base:
+- versão oficial atual da frontend/public enviada pelo usuário;
+- lógica antiga de geolocalização + encaixe na malha + rota completa preservada.
+
+Alterações realizadas:
+1. Calibração GPS -> mapa refeita com os pontos A-X marcados no mapa original 1414x2000.
+2. Incluídos P1MID, P2MID, início da curva do ponto 9 e GPS1 da Ferramentaria.
+3. GPS1:
+   -28.31398501063756, -53.496434170087625
+   associado exatamente ao local azul mostrado na Ferramentaria.
+4. R corrigido:
+   -28.31135931233716, -53.496221157504145
+   entrada real do Ponto 16.
+5. Ponto 4:
+   - removido acesso direto antigo pela esquerda;
+   - entrada obrigatória pela direita;
+   - saída cadastrada pela esquerda, reconectando à via comum.
+6. As demais rotas e a lógica de Dijkstra da versão anterior foram preservadas.
+
+PADRÃO TI PRESERVADO:
+- /env.js
+- /env-banner.js
+- favicons
+- style.css
+- --env-banner-height
+- Docker / nginx / package / CI-CD não foram alterados.
+
+ARQUIVOS DO PATCH:
+- dados.js (alterado)
+- index.html (somente cache-busting para v10.0)
+- app.js (mesma lógica oficial anterior; incluído por consistência)
+
+VALIDAÇÕES:
+- app.js: sintaxe OK
+- dados.js: sintaxe OK
+- destinos 1 a 17 alcançáveis a partir da Portaria
+- Ponto 4 chega pela direita
+- GPS1 cai no ponto azul da Ferramentaria
+
+Sugestão:
+criar nova branch a partir da dev atual e substituir somente estes arquivos em frontend/public.
