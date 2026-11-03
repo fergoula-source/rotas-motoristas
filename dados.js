@@ -737,6 +737,20 @@ const NODES = {
     782.5,
     1418.5
   ]
+  ,
+  "P912_R0": [1075, 1135],
+  "P912_R1": [1072, 1100],
+  "P912_R2": [1058, 1085],
+  "P912_T1": [990, 1078],
+  "P912_T2": [900, 1078],
+  "P912_T3": [805, 1078],
+  "P912_T4": [705, 1079],
+  "P912_T5": [625, 1081],
+  "P912_C1": [575, 1092],
+  "P912_C2": [553, 1106],
+  "P912_C3": [553, 1125],
+  "P912_L1": [615, 1124],
+  "P912_M": [780, 1127]
 };
 const EDGES = [
   {
@@ -1237,7 +1251,31 @@ const EDGES = [
     "mode": "one",
     "kind": "blue"
   }
+
 ];
+
+// Correção exclusiva dos destinos 9 e 12.
+// Para chegar a esses pontos, o caminhão entra pela direita, percorre a faixa
+// superior, faz a curva à esquerda e retorna pela faixa inferior. O trecho
+// entre 9 e 12 é mão dupla, conforme o mapa final validado.
+const SPECIAL_EDGES_9_12 = [
+  {"a":"J2","b":"P912_R0","mode":"one","kind":"black"},
+  {"a":"P912_R0","b":"P912_R1","mode":"one","kind":"black"},
+  {"a":"P912_R1","b":"P912_R2","mode":"one","kind":"black"},
+  {"a":"P912_R2","b":"P912_T1","mode":"one","kind":"black"},
+  {"a":"P912_T1","b":"P912_T2","mode":"one","kind":"black"},
+  {"a":"P912_T2","b":"P912_T3","mode":"one","kind":"black"},
+  {"a":"P912_T3","b":"P912_T4","mode":"one","kind":"black"},
+  {"a":"P912_T4","b":"P912_T5","mode":"one","kind":"black"},
+  {"a":"P912_T5","b":"P912_C1","mode":"one","kind":"black"},
+  {"a":"P912_C1","b":"P912_C2","mode":"one","kind":"black"},
+  {"a":"P912_C2","b":"P912_C3","mode":"one","kind":"black"},
+  {"a":"P912_C3","b":"P912_L1","mode":"one","kind":"black"},
+  {"a":"P912_L1","b":"D9","mode":"one","kind":"black"},
+  {"a":"D9","b":"P912_M","mode":"both","kind":"red"},
+  {"a":"P912_M","b":"D12","mode":"both","kind":"red"}
+];
+
 const DEST_NODE = {
   "1": "D1",
   "2": "D2",

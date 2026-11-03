@@ -346,10 +346,23 @@ function geographicProjectionOnSegment(originGeo,aPixel,bPixel){
   return {q:qPixel,qGeo,t,dMeters:haversine(originGeo,qGeo)};
 }
 
-function baseAdjacency(){
+function edgeSetForDestination(id){
+  const targetId=String(id);
+  if(targetId!=="9" && targetId!=="12") return EDGES;
+
+  // Para 9/12, bloqueia somente os dois atalhos em contramão da malha geral.
+  // Todas as demais vias continuam exatamente como na V11.1.
+  const filtered=EDGES.filter(e=>!(
+    (e.a==="U4" && e.b==="D9") ||
+    (e.a==="U3" && e.b==="D12")
+  ));
+  return [...filtered,...SPECIAL_EDGES_9_12];
+}
+
+function baseAdjacency(edges=EDGES){
   const adj={};
   Object.keys(NODES).forEach(n=>adj[n]=[]);
-  for(const e of EDGES){
+  for(const e of edges){
     const a=NODES[e.a], b=NODES[e.b];
     const w=pixelDistanceMeters(a,b);
     adj[e.a].push({to:e.b,w});
@@ -358,10 +371,10 @@ function baseAdjacency(){
   return adj;
 }
 
-function snapCandidates(originGeo){
+function snapCandidates(originGeo,edges=EDGES){
   const list=[];
-  for(let i=0;i<EDGES.length;i++){
-    const e=EDGES[i];
+  for(let i=0;i<edges.length;i++){
+    const e=edges[i];
     // Área roxa/proibida nunca é ponto de entrada para caminhão.
     if(e.kind === "purple") continue;
     const a=NODES[e.a], b=NODES[e.b];
@@ -372,8 +385,8 @@ function snapCandidates(originGeo){
   return list;
 }
 
-function adjacencyWithSnap(snap){
-  const adj=baseAdjacency();
+function adjacencyWithSnap(snap,edges=EDGES){
+  const adj=baseAdjacency(edges);
   adj.START=[];
   const e=snap.e;
   const a=NODES[e.a], b=NODES[e.b];
@@ -492,10 +505,11 @@ function buildRoute(id){
   const target = DEST_NODE[id];
   if(!target) return null;
 
+  const routeEdges=edgeSetForDestination(id);
   const origin = currentOrigin();
 
   if(!origin.isGps || !gps){
-    const adj = baseAdjacency();
+    const adj = baseAdjacency(routeEdges);
     const result = dijkstra(adj,"P0",target);
     if(!result) return null;
     return {
@@ -509,7 +523,7 @@ function buildRoute(id){
   }
 
   const originGeo={lat:gps.lat,lon:gps.lon};
-  const candidates=snapCandidates(originGeo);
+  const candidates=snapCandidates(originGeo,routeEdges);
   if(!candidates.length) return null;
 
   const nearest=candidates[0].dMeters;
@@ -519,7 +533,7 @@ function buildRoute(id){
   // Isso impede "pular" de uma mão única para outra rua só para inventar uma rota.
   if(nearest <= 25){
     const snap=candidates[0];
-    const result=dijkstra(adjacencyWithSnap(snap),"START",target);
+    const result=dijkstra(adjacencyWithSnap(snap,routeEdges),"START",target);
     if(result) best={snap,result};
   }else{
     // Fora da pista (por exemplo, pessoa a pé): procura a via válida mais próxima.
@@ -527,7 +541,7 @@ function buildRoute(id){
     for(const limit of limits){
       for(const snap of candidates){
         if(snap.dMeters>limit) break;
-        const result=dijkstra(adjacencyWithSnap(snap),"START",target);
+        const result=dijkstra(adjacencyWithSnap(snap,routeEdges),"START",target);
         if(!result) continue;
         best={snap,result};
         break;
