@@ -49,6 +49,8 @@ let lastRoutedGps = null;
 let lastRouteAt = 0;
 
 let screenWakeLock = null;
+let wakeRetryTimer = null;
+let wakeRetryInFlight = false;
 
 const activePointers = new Map();
 let lastSinglePointer = null;
@@ -449,6 +451,13 @@ function clearRoute(){
   accessInfo.classList.add("hidden");
   currentDestinationId = null;
   routeStarted = false;
+  stopWakeRetryLoop();
+
+  if(screenWakeLock && !screenWakeLock.released){
+    screenWakeLock.release().catch(()=>{});
+  }
+  screenWakeLock = null;
+  wakeStatus.textContent = "Tela ativa ao navegar";
 }
 
 function currentOrigin(){
@@ -615,38 +624,105 @@ async function renderRoute(id, options = {}){
   return true;
 }
 
-async function keepScreenAwake(){
-  if(!routeStarted) return false;
+function startWakeRetryLoop(){
+  if(wakeRetryTimer) return;
+
+  wakeRetryTimer = setInterval(async ()=>{
+    if(
+      routeStarted &&
+      document.visibilityState === "visible" &&
+      (!screenWakeLock || screenWakeLock.released)
+    ){
+      await keepScreenAwake();
+    }
+  }, 12000);
+}
+
+function stopWakeRetryLoop(){
+  if(wakeRetryTimer){
+    clearInterval(wakeRetryTimer);
+    wakeRetryTimer = null;
+  }
+}
+
+async function keepScreenAwake(force=false){
+  if(!routeStarted && !force) return false;
 
   if(!("wakeLock" in navigator)){
     wakeStatus.textContent = "Tela: depende do aparelho";
     return false;
   }
 
-  try{
-    if(screenWakeLock) return true;
+  if(document.visibilityState !== "visible"){
+    return false;
+  }
 
+  if(screenWakeLock && !screenWakeLock.released){
+    wakeStatus.textContent = "Tela mantida ativa";
+    startWakeRetryLoop();
+    return true;
+  }
+
+  if(wakeRetryInFlight) return false;
+  wakeRetryInFlight = true;
+
+  try{
     screenWakeLock = await navigator.wakeLock.request("screen");
     wakeStatus.textContent = "Tela mantida ativa";
+    startWakeRetryLoop();
 
-    screenWakeLock.addEventListener("release",()=>{
-      screenWakeLock = null;
-      wakeStatus.textContent = "Tela ativa ao navegar";
+    const thisLock = screenWakeLock;
+    thisLock.addEventListener("release",()=>{
+      if(screenWakeLock === thisLock){
+        screenWakeLock = null;
+      }
+
+      if(routeStarted){
+        wakeStatus.textContent = "Reativando tela...";
+        setTimeout(()=>{
+          if(
+            routeStarted &&
+            document.visibilityState === "visible" &&
+            (!screenWakeLock || screenWakeLock.released)
+          ){
+            keepScreenAwake();
+          }
+        }, 400);
+      }else{
+        wakeStatus.textContent = "Tela ativa ao navegar";
+      }
     });
 
     return true;
   }catch(e){
     screenWakeLock = null;
     wakeStatus.textContent = "Tela: depende do aparelho";
+    startWakeRetryLoop();
     return false;
+  }finally{
+    wakeRetryInFlight = false;
   }
 }
 
-document.addEventListener("visibilitychange", async ()=>{
-  if(document.visibilityState === "visible" && routeStarted && !screenWakeLock){
+async function restoreWakeLock(){
+  if(
+    routeStarted &&
+    document.visibilityState === "visible" &&
+    (!screenWakeLock || screenWakeLock.released)
+  ){
     await keepScreenAwake();
   }
-});
+}
+
+document.addEventListener("visibilitychange",restoreWakeLock);
+window.addEventListener("focus",restoreWakeLock);
+window.addEventListener("pageshow",restoreWakeLock);
+
+document.addEventListener("pointerdown",()=>{
+  if(routeStarted){
+    restoreWakeLock();
+  }
+},{passive:true});
 
 function showLocationModal(type="unavailable"){
   if(locationFallbackAccepted) return;
@@ -844,10 +920,18 @@ byId("btnRota").addEventListener("click",async ()=>{
     return;
   }
 
+  // Solicita o Wake Lock dentro do gesto do usuário, que é o cenário
+  // mais confiável nos navegadores móveis.
+  await keepScreenAwake(true);
+
   lastRoutedGps = gps ? {lat:gps.lat,lon:gps.lon} : null;
   lastRouteAt = Date.now();
 
-  await renderRoute(destinoSelect.value,{fit:true,quiet:false});
+  const routed = await renderRoute(destinoSelect.value,{fit:true,quiet:false});
+
+  if(!routed && !routeStarted){
+    stopWakeRetryLoop();
+  }
 });
 
 destinoSelect.addEventListener("change",()=>{
